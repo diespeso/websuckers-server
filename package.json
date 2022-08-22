@@ -1,0 +1,22 @@
+{
+  "name": "websuckers",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon --ignore client.js server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "express-ws": "^5.0.2",
+    "uuid": "^8.3.2",
+    "ws": "^8.8.1"
+  }
+}
