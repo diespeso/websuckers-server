@@ -9,8 +9,8 @@ const { WebSocket } = require('ws');
 
 dotenv.config();
 
-const IP = os.networkInterfaces().Ethernet[0].address; // change this if the network changes to wifi
-const DEBUG = true;
+const IP = os.networkInterfaces().Ethernet?.[0] ?? os.networkInterfaces()['Wi-Fi'][1].address;
+const DEBUG = false;
 const debug = (text) => { if (DEBUG) {console.log(text);} }
 
 const app = express();
@@ -46,7 +46,6 @@ const buildMessage = (messageType, messageObject) => ({
 });
 
 const sendBroadcast = (ws, data) => {
-    console.log(Object.keys(clients));
     Object.keys(clients).forEach((clientUuid) => {
         if (data.id !== clientUuid) { //everyone but the emissor
             sendMessage(clients[clientUuid], MESSAGE_TYPES.BROADCAST, { broadcast: data.broadcast, id: data.id});
@@ -63,11 +62,15 @@ const handleMessage = (ws, req, data) => {
             sendGrantedIdentifier(ws, id);
             break;
         case MESSAGE_TYPES.TEXT:
-            debug(`user ${data.id} says: ${data.text}`);
+            console.log(`user ${data.id} says: ${data.text}`);
             break;
         case MESSAGE_TYPES.BROADCAST:
-            debug(`user ${data.id} broadcasts: ${data.broadcast}`);
+            console.log(`user ${data.id} broadcasts: ${data.broadcast}`);
             sendBroadcast(ws, data);
+            break;
+        case MESSAGE_TYPES.TEXT:
+            console.log(`user ${data.id} sends text message to ${data.destination}, says: ${data.text}`);
+            sendMessage(ws, data);
             break;
     }
 };
