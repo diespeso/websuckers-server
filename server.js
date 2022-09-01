@@ -6,17 +6,15 @@ const expressWs = require('express-ws');
 const { v4: uuidv4 } = require('uuid');
 const { WebSocket } = require('ws');
 
-
 dotenv.config();
-
-const IP = os.networkInterfaces().Ethernet?.[0] ?? os.networkInterfaces()['Wi-Fi'][1].address;
+const IP = os.networkInterfaces().Ethernet?.[0].address ?? os.networkInterfaces()['Wi-Fi'][1].address;
 const DEBUG = false;
 const debug = (text) => { if (DEBUG) {console.log(text);} }
 
 const app = express();
 const wsServer = expressWs(app);
 
-let clients = {};
+let clients = [];
 
 // COMMON STARTS 
 const MESSAGE_TYPES = {
@@ -35,6 +33,7 @@ const receiveJson = (message) => {
     } catch (e) {
         if (e.name === 'SyntaxError') {
             console.log('failed to parse received data as JSON: bad format');
+            console.log(message);
         }
     }
     return received;
@@ -61,27 +60,29 @@ const handleMessage = (ws, req, data) => {
             clients[id] = ws;
             sendGrantedIdentifier(ws, id);
             break;
-        case MESSAGE_TYPES.TEXT:
-            console.log(`user ${data.id} says: ${data.text}`);
-            break;
         case MESSAGE_TYPES.BROADCAST:
             console.log(`user ${data.id} broadcasts: ${data.broadcast}`);
             sendBroadcast(ws, data);
             break;
         case MESSAGE_TYPES.TEXT:
             console.log(`user ${data.id} sends text message to ${data.destination}, says: ${data.text}`);
-            sendMessage(ws, data);
+            sendMessage(clients[data.destination],  MESSAGE_TYPES.TEXT, data);
             break;
     }
 };
 
 const sendMessage = (ws, messageType, messageObject) => {
-    sendJson(ws, buildMessage(messageType, messageObject));
+    if (ws) {
+        sendJson(ws, buildMessage(messageType, messageObject));
+    } else {
+        console.log('failted to send message, missing client');
+    }
 }
 
 // COMMON ENDS
 
 const sendGrantedIdentifier = (ws, id) => {
+    console.log('id', id); //quitar luego
     sendMessage(ws, MESSAGE_TYPES.GRANT_IDENTIFIER, { id });
 };
 
@@ -90,7 +91,7 @@ const checkGreeting = (data) => {
     return !currentUuids.includes(data.id);
 }
 
-// routing
+// routing, on connect
 app.ws('/', (ws, req) => {
     console.log('client connects');
     ws.on('message', (message) => {
@@ -99,11 +100,6 @@ app.ws('/', (ws, req) => {
             handleMessage(ws, req, data);
         }
     });
-
-    ws.on('close', () => {
-        clients = {};
-    })
-
 });
 
 
